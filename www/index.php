@@ -6,7 +6,7 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Toothbrushes Shop</title>
-        <link href="/css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+        <link href="/static/css/bootstrap/bootstrap.min.css" rel="stylesheet" />
     </head>
     <body>
         <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -37,42 +37,42 @@
             <div class="row">
                 <div class="col-md-4">
                     <h2>Oral-B Genius 8000</h2>
-                    <p><img src="/images/1.jpg" /></p>
+                    <p><img src="/uploads/images/1.jpg" /></p>
                     <p>Oral-B – марка зубных щеток №1, рекомендуемая большинством стоматологов мира.</p>
                     <p>Новинка 2016 года! Зубная щетка нового поколения Oral-B Genius 8000 - это абсолютный прорыв в области чистки зубов. Самая передовая щетка в модельном ряду Oral-B действительно помогает чистить зубы именно так, как рекомендуют профессионалы.</p>
                     <p><a class="btn btn-default" href="#" role="button">Просмотреть &raquo;</a></p>
                 </div>
                 <div class="col-md-4">
                     <h2>Oral-B Genius 8000</h2>
-                    <p><img src="/images/1.jpg" /></p>
+                    <p><img src="/uploads/images/1.jpg" /></p>
                     <p>Oral-B – марка зубных щеток №1, рекомендуемая большинством стоматологов мира.</p>
                     <p>Новинка 2016 года! Зубная щетка нового поколения Oral-B Genius 8000 - это абсолютный прорыв в области чистки зубов. Самая передовая щетка в модельном ряду Oral-B действительно помогает чистить зубы именно так, как рекомендуют профессионалы.</p>
                     <p><a class="btn btn-default" href="#" role="button">Просмотреть &raquo;</a></p>
                 </div>
                 <div class="col-md-4">
                     <h2>Oral-B Genius 8000</h2>
-                    <p><img src="/images/1.jpg" /></p>
+                    <p><img src="/uploads/images/1.jpg" /></p>
                     <p>Oral-B – марка зубных щеток №1, рекомендуемая большинством стоматологов мира.</p>
                     <p>Новинка 2016 года! Зубная щетка нового поколения Oral-B Genius 8000 - это абсолютный прорыв в области чистки зубов. Самая передовая щетка в модельном ряду Oral-B действительно помогает чистить зубы именно так, как рекомендуют профессионалы.</p>
                     <p><a class="btn btn-default" href="#" role="button">Просмотреть &raquo;</a></p>
                 </div>
                 <div class="col-md-4">
                     <h2>Oral-B Genius 8000</h2>
-                    <p><img src="/images/1.jpg" /></p>
+                    <p><img src="/uploads/images/1.jpg" /></p>
                     <p>Oral-B – марка зубных щеток №1, рекомендуемая большинством стоматологов мира.</p>
                     <p>Новинка 2016 года! Зубная щетка нового поколения Oral-B Genius 8000 - это абсолютный прорыв в области чистки зубов. Самая передовая щетка в модельном ряду Oral-B действительно помогает чистить зубы именно так, как рекомендуют профессионалы.</p>
                     <p><a class="btn btn-default" href="#" role="button">Просмотреть &raquo;</a></p>
                 </div>
                 <div class="col-md-4">
                     <h2>Oral-B Genius 8000</h2>
-                    <p><img src="/images/1.jpg" /></p>
+                    <p><img src="/uploads/images/1.jpg" /></p>
                     <p>Oral-B – марка зубных щеток №1, рекомендуемая большинством стоматологов мира.</p>
                     <p>Новинка 2016 года! Зубная щетка нового поколения Oral-B Genius 8000 - это абсолютный прорыв в области чистки зубов. Самая передовая щетка в модельном ряду Oral-B действительно помогает чистить зубы именно так, как рекомендуют профессионалы.</p>
                     <p><a class="btn btn-default" href="#" role="button">Просмотреть &raquo;</a></p>
                 </div>
                 <div class="col-md-4">
                     <h2>Oral-B Genius 8000</h2>
-                    <p><img src="/images/1.jpg" /></p>
+                    <p><img src="/uploads/images/1.jpg" /></p>
                     <p>Oral-B – марка зубных щеток №1, рекомендуемая большинством стоматологов мира.</p>
                     <p>Новинка 2016 года! Зубная щетка нового поколения Oral-B Genius 8000 - это абсолютный прорыв в области чистки зубов. Самая передовая щетка в модельном ряду Oral-B действительно помогает чистить зубы именно так, как рекомендуют профессионалы.</p>
                     <p><a class="btn btn-default" href="#" role="button">Просмотреть &raquo;</a></p>
@@ -82,7 +82,7 @@
                 <p>&copy; Toothbrushes Shop 2016</p>
             </footer>
         </div>
-        <script src="/js/jquery/jquery-3.1.1.min.js"></script>
-        <script src="/js/bootstrap/bootstrap.min.js"></script>
+        <script src="/static/js/jquery/jquery-3.1.1.min.js"></script>
+        <script src="/static/js/bootstrap/bootstrap.min.js"></script>
     </body>
 </html>

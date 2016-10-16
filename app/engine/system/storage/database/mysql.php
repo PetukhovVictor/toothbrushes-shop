@@ -19,8 +19,8 @@ function queryBuild($query, $params) {
     $pattern = array();
     $replacement = array();
     foreach($params as $param => $value) {
-        $pattern[] = ":" . $param;
-        $replacement[] = '"' . mysqli_real_escape_string($value) . '"';
+        $pattern[] = '/:' . $param . '/';
+        $replacement[] = '"' . mysqli_real_escape_string($GLOBALS["mysqli"], $value) . '"';
     }
     return preg_replace($pattern, $replacement, $query);
 }
@@ -43,6 +43,9 @@ function query($query, $type, $params = null) {
             break;
         case INSERT_QUERY:
             return mysqli_insert_id($GLOBALS["mysqli"]);
+            break;
+        case UPDATE_QUERY:
+            return;
             break;
     }
 }

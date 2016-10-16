@@ -10,15 +10,17 @@
         <link href="/css/catalog/list.css" rel="stylesheet" />
     </head>
     <body>
-        <div style="border: 1px solid gray; padding: 10px; border-radius: 3px; display: inline-block;">
-            <?php foreach($items as $item): ?>
-                <div style="padding: 10px;">
-                    <img src="<?=$item["image"]?>" style="max-width: 200px; max-height: 200px" alt="" />
-                </div>
-                <div style="padding: 10px;text-align: center;">
-                    <?=$item["title"]?>
-                </div>
-            <?php endforeach ?>
+        <?php foreach($items as $item): ?>
+        <div style="border: 1px dashed gray; text-align: center; margin: 5px; padding: 10px; float: left; border-radius: 3px; display: block;">
+            <div style="padding: 10px;">
+                <img src="<?=$item["image"]?>" style="max-width: 200px; max-height: 200px" alt="" />
+            </div>
+            <div style="padding: 10px;">
+                <?=$item["title"]?>
+            </div>
         </div>
+        <?php endforeach ?>
+        <script src="/js/general.js"></script>
+        <script src="/js/catalog/list.js"></script>
     </body>
 </html>

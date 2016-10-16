@@ -1,6 +1,7 @@
 <?php namespace FrontController;
 
-require_once TEMPLATES_DIR . "/compiler.php";
+require_once SYS_DIR . "/templates/compiler.php";
+require_once SYS_DIR . "/templates/output.php";
 require_once BACK_CONTROLLERS_DIR . "/catalog/list.php";
 
 function loadItems() {
@@ -9,8 +10,9 @@ function loadItems() {
 }
 
 $items = loadItems();
+
 $content = \Bootstrap\loadTemplate(array(
     "items" => $items
 ));
 
-echo $content;
+\Template\output($content);

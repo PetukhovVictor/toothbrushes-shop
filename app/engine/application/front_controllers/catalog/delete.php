@@ -5,17 +5,15 @@ require_once SYS_DIR . "/json/output.php";
 
 function deleteItem($params) {
     if (!\BackController\paramsCheck($params, "delete")) {
-        \JSON\output(-1, "Incorrect params.");
-        return -1;
+        return \Bootstrap\output(-1, "Incorrect ID");
     }
     $resultEdit = \BackController\deleteItem($params);
     if ($resultEdit == -2) {
-        \JSON\output(-2, "Item with ID not exist.");
-        return -2;
+        return \Bootstrap\output(-2, "Item with ID not exist.");
     }
-    return 0;
+    return \Bootstrap\output(0, "OK");
 }
 
-deleteItem($_POST);
+$result = deleteItem($_GET);
 
-\JSON\output(0, "OK");
+\JSON\output($result);

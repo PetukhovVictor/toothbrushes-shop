@@ -38,4 +38,17 @@ function loadTemplate($environment) {
     return \Template\compile($template, $environment);
 }
 
+function output($status_code, $message = null, $data = null) {
+    $output = array(
+        "status_code" => $status_code
+    );
+    if ($message != null) {
+        $output["message"] = $message;
+    }
+    if ($data != null) {
+        $output["data"] = $data;
+    }
+    return $output;
+}
+
 require_once $frontController;

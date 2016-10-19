@@ -10,7 +10,7 @@
         <link href="/css/catalog/list.css" rel="stylesheet" />
     </head>
     <body>
-        <?php foreach($items as $item): ?>
+        <?php foreach($data["items"] as $item): ?>
         <div style="border: 1px dashed gray; text-align: center; margin: 5px; padding: 10px; float: left; border-radius: 3px; display: block;">
             <div style="padding: 10px;">
                 <img src="<?=$item["image"]?>" style="max-width: 200px; max-height: 200px" alt="" />

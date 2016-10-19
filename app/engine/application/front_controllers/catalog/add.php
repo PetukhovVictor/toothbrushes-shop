@@ -3,31 +3,16 @@
 require_once BACK_CONTROLLERS_DIR . "/catalog/CRUD.php";
 require_once SYS_DIR . "/json/output.php";
 
-const PARAMS = array(
-    "title" => '^.{1,255}$',
-    "description" => '^.{1,65535}$',
-    "price" => '^[+-]([0-9]*[.])?[0-9]+$',
-    "image" => '^http:\/\/[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+$'
-);
-
-function paramsCheck($params) {
-    foreach (PARAMS as $param => $pattern) {
-        if (empty($params[$param]) || preg_match($pattern, $params[$param])) {
-            return false;
-        }
-    }
-    return true;
-}
-
 function addItem($params) {
-    if (!paramsCheck($params)) {
-        \JSON\output(1, "Incorrect fields.");
-        return false;
+    if (!\BackController\paramsCheck($params, "add")) {
+        return \Bootstrap\output(-1, "Incorrect fields.");
     }
-    $items = \BackController\addItem($params);
-    return $items;
+    $item = \BackController\addItem($params);
+    return \Bootstrap\output(0, "OK", array(
+        "item" => $item
+    ));
 }
 
-$items = addItem($_POST);
+$result = addItem($_POST);
 
-\JSON\output(0, "OK", $items);
+\JSON\output($result);

@@ -6,3 +6,8 @@ const DB = array(
     "user" => "toothbrushesshop",
     "password" => "PG2CTGT3MWjBVVwq"
 );
+
+const MEMCACHED = array(
+    "host" => "localhost",
+    "port" => 11211
+);

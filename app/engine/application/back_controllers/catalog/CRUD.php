@@ -3,7 +3,7 @@
 require_once SYS_DIR . "/config.php";
 require_once STORAGE_DIR . "/database/mysql.php";
 
-const PARAMS = array(
+const CONSTRAINS = array(
     "id" => '^[1-9]\d*?$',
     "title" => '^.{1,255}$',
     "description" => '^.{1,65535}$',
@@ -15,10 +15,10 @@ function paramsCheck($params, $mode = "add") {
     if (empty($params) || !is_array($params)) {
         return false;
     }
-    if ($mode == "delete") {
+    if ($mode == "delete" || $mode == "get") {
         return true;
     }
-    foreach (PARAMS as $param => $pattern) {
+    foreach (CONSTRAINS as $param => $pattern) {
         $idCheckSkip = $mode == "add" && $param == "id";
         if (!$idCheckSkip && (empty($params[$param]) || preg_match($pattern, $params[$param]))) {
             return false;
@@ -27,15 +27,15 @@ function paramsCheck($params, $mode = "add") {
     return true;
 }
 
-function deleteItem($params) {
+function deleteItem($itemParams) {
     $item = \DB\query("SELECT * FROM Items WHERE id = :id", \DB\SELECT_QUERY, array(
-        "id" => $params["id"]
+        "id" => $itemParams["id"]
     ));
     if (count($item) == 0) {
         return -2;
     }
     \DB\query("DELETE FROM Items WHERE `id` = :id", \DB\DELETE_QUERY, array(
-        "id" => $params["id"]
+        "id" => $itemParams["id"]
     ));
     return 0;
 }
@@ -57,5 +57,15 @@ function addItem($itemParams) {
     $item = \DB\query("SELECT * FROM Items WHERE id = :id", \DB\SELECT_QUERY, array(
         "id" => $newItemID
     ));
+    return $item;
+}
+
+function getItem($itemParams) {
+    $item = \DB\query("SELECT * FROM Items WHERE id = :id", \DB\SELECT_QUERY, array(
+        "id" => $itemParams["id"]
+    ));
+    if (count($item) == 0) {
+        return -2;
+    }
     return $item;
 }

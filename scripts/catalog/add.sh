@@ -66,7 +66,7 @@ status_code=$(echo ${result} | python -c "import sys, json; print json.load(sys.
 
 if [ "$status_code" -eq 0 ]
 then
-    id=$(echo ${result} | python -c "import sys, json; print json.load(sys.stdin)['data'][0]['id']")
+    id=$(echo ${result} | python -c "import sys, json; print json.load(sys.stdin)['data']['item'][0]['id']")
     echo "SUCCESS: item inserted with id = ${id}"
 else
     echo "ERROR: status code = $status_code"

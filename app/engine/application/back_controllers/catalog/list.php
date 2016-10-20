@@ -3,14 +3,13 @@
 require_once SYS_DIR . "/config.php";
 require_once STORAGE_DIR . "/database/mysql.php";
 require_once STORAGE_DIR . "/cache/memcached.php";
+require_once SYS_DIR . "/data_structures/RBTree.php";
 
 const CONSTRAINS = array(
     "page" => '/^[1-9]\d*?$/'
 );
 
-const ITEMS_CACHE_SIZE = 10000; // 10.000 items per
-const ITEMS_CACHE_PORTION_SIZE = 1000;
-const ITEMS_CACHE_FIELD_KEY = "id";
+const CACHE_SNAPSHOTS_DIRECTORY = HOME_DIR . "/../../data/cache_snapshots";
 const ITEMS_CACHE_FIELDS = array("title", "price", "image");
 
 function paramsCheck($params) {
@@ -24,56 +23,73 @@ function calcLimitSet($page, $items_one_page) {
     return array(($page - 1) * $items_one_page, $items_one_page);
 }
 
-function cachePortion($resultSet, &$itemIds) {
-    $id_prev_set = 0;
-    foreach ($resultSet as $row) {
-        array_push($itemIds, $row["id"]);
-        $item = array();
-        foreach (ITEMS_CACHE_FIELDS as $field) {
-            $item[$field] = $row[$field];
-        }
-        \Memcached\add("catalog/item/" . $row["id"], $item);
-        $id_prev_set = $row["id"];
+function getItemsTree($sorting) {
+    $tree = \Memcached\get("catalog/items/treeBy{$sorting}");
+    if ($tree === false) { // cache miss
+        $tree = file_get_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/treeBy{$sorting}.data");
+        $tree = unserialize($tree);
+        \Memcached\add("catalog/items/treeBy{$sorting}", $tree);
     }
-    return $id_prev_set;
+    return $tree;
 }
 
-function cacheAll($limit) {
-    $cacheItemNumber = ceil($limit / ITEMS_CACHE_SIZE);
+function getSectorNumbers(&$itemsTree, $limit) {
+    $sectorFirst = $itemsTree->lastBest($itemsTree, $limit[0] + 1);
+    $sectorLast = $itemsTree->lastBest($itemsTree, $limit[0] + 1 + $limit[1] + 1);
+    return array(
+        "first" => array(
+            "leftBound" => $sectorFirst->key,
+            "sector" => $sectorFirst->value
+        ),
+        "last" => array(
+            "leftBound" => $sectorLast->key,
+            "sector" => $sectorLast->value
+        )
+    );
+}
+
+function getIds($sectors, $limit, $sorting) {
+    $itemsResidue = $limit[1];
     $itemIds = array();
-    $isContinueRequestData = true;
-    $page = 1;
-    $idPrevSet = 0;
-    while ($isContinueRequestData) {
-        $time = microtime();
-        $resultSet = \DB\query("SELECT * FROM Items WHERE id > {$idPrevSet} ORDER BY id ASC LIMIT 0," . ITEMS_CACHE_PORTION_SIZE, \DB\SELECT_QUERY);
-        echo "SELECT * FROM Items WHERE id > {$idPrevSet} ORDER BY id ASC LIMIT {$limit[0]},{$limit[1]} <br/>";
-        echo ((microtime() - $time)*1000) . "<br />";
-        if (count($resultSet) == 0) {
+    $leftBound = ($limit[0] + 1) - $sectors["first"]["leftBound"];
+    for ($i = $sectors["first"]["sector"]; $i <= $sectors["last"]["sector"]; $i++) {
+        $itemIdsSector = \Memcached\get("catalog/items/arrayBy{$sorting}/{$i}");
+        if ($itemIdsSector === false) { // cache miss
+            $itemIdsSector = file_get_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/arrayBy{$sorting}/{$i}.data");
+            $itemIdsSector = unserialize($itemIdsSector);
+            \Memcached\add("catalog/items/arrayBy{$sorting}/{$i}", $itemIdsSector);
+        }
+        $itemIds = array_merge($itemIds, array_slice($itemIdsSector, $leftBound, $itemsResidue));
+        $leftBound = 0;
+        $itemsResidue = $limit[1] - count($itemIds);
+        if ($itemsResidue == 0) {
             break;
         }
-        $idPrevSet = cachePortion($resultSet, $itemIds); // itemIds by reference because may be big array
-        if ($page == 20) {
-            $isContinueRequestData = false;
-        }
-        $page++;
     }
-    \Memcached\add("catalog/itemsById", $itemIds);
+    return $itemIds;
 }
 
-function checkCached($page, $sorting) {
-    $ids = \Memcached\get("catalog/items{$sorting}");
-    if ($ids === false) {
-        return false;
+function getItems($itemIds) {
+    $items = array();
+    for ($i = 0; $i < count($itemIds); $i++) {
+        $item = \Memcached\get("catalog/item/{$itemIds[$i]}");
+        if ($item === false) { // cache miss
+            $fields = implode(",", ITEMS_CACHE_FIELDS);
+            $item = \DB\query("SELECT {$fields} FROM Items WHERE id = '{$itemIds[$i]}'", \DB\SELECT_QUERY);
+            $item = $item[0];
+            \Memcached\add("catalog/item/{$itemIds[$i]}", $item);
+        }
+        $item["id"] = $itemIds[$i];
+        array_push($items, $item);
     }
-
+    return $items;
 }
 
 function loadItems($page, $items_one_page) {
-    cacheAll(500);
-    exit();
-    $inChache = checkCached($page, "ById");
     $limit = calcLimitSet($page, $items_one_page);
-    $items = \DB\query("SELECT * FROM Items ORDER BY id DSEC LIMIT {$limit[0]},{$limit[1]}", \DB\SELECT_QUERY);
+    $itemsTree = getItemsTree("id");
+    $sectors = getSectorNumbers($itemsTree, $limit);
+    $itemIds = getIds($sectors, $limit, "id");
+    $items = getItems($itemIds);
     return $items;
 }

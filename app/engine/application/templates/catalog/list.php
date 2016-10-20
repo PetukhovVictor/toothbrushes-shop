@@ -16,7 +16,7 @@
                 <img src="<?=$item["image"]?>" style="max-width: 200px; max-height: 200px" alt="" />
             </div>
             <div style="padding: 10px;">
-                <?=$item["title"]?>
+                <?=$item["title"]?> [<?=$item["id"]?>]
             </div>
         </div>
         <?php endforeach ?>

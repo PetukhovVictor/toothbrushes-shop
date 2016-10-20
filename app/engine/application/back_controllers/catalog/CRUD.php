@@ -2,6 +2,7 @@
 
 require_once SYS_DIR . "/config.php";
 require_once STORAGE_DIR . "/database/mysql.php";
+require_once STORAGE_DIR . "/cache/memcached.php";
 
 const CONSTRAINS = array(
     "id" => '^[1-9]\d*?$',
@@ -10,6 +11,9 @@ const CONSTRAINS = array(
     "price" => '^[+-]([0-9]*[.])?[0-9]+$',
     "image" => '^http:\/\/[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+\.[a-zA-Z0-9_\-]+$'
 );
+
+const ARRAYS_ID_MAX_DEFLECTION_FACTOR = 0.9; // d factor = (actual size - predefined size) / actual size
+const ITEMS_CACHE_FIELDS = array("title", "price", "image");
 
 function paramsCheck($params, $mode = "add") {
     if (empty($params) || !is_array($params)) {
@@ -27,6 +31,18 @@ function paramsCheck($params, $mode = "add") {
     return true;
 }
 
+function changeItemsTree() {
+
+}
+
+function changeCurrentIdsArray() {
+
+}
+
+function rebuildIdsArray() {
+
+}
+
 function deleteItem($itemParams) {
     $item = \DB\query("SELECT * FROM Items WHERE id = :id", \DB\SELECT_QUERY, array(
         "id" => $itemParams["id"]
@@ -37,6 +53,7 @@ function deleteItem($itemParams) {
     \DB\query("DELETE FROM Items WHERE `id` = :id", \DB\DELETE_QUERY, array(
         "id" => $itemParams["id"]
     ));
+    \Memcached\delete("catalog/item/{$itemParams["id"]}");
     return 0;
 }
 
@@ -49,14 +66,21 @@ function editItem($itemParams, $id) {
         return -2;
     }
     \DB\query("UPDATE Items SET `title` = :title, `description` = :description, `price` = :price, `image` = :image WHERE `id` = :id", \DB\UPDATE_QUERY, $itemParams);
+    $cacheItem = array();
+    foreach (ITEMS_CACHE_FIELDS as $field) {
+        $cacheItem[$field] = $itemParams[$field];
+    }
+    \Memcached\set("catalog/item/{$id}", $cacheItem);
     return $item;
 }
 
 function addItem($itemParams) {
     $newItemID = \DB\query("INSERT INTO Items(`title`, `description`, `price`, `image`) VALUES(:title, :description, :price, :image)", \DB\INSERT_QUERY, $itemParams);
-    $item = \DB\query("SELECT * FROM Items WHERE id = :id", \DB\SELECT_QUERY, array(
+    $fields = implode(",", ITEMS_CACHE_FIELDS);
+    $item = \DB\query("SELECT {$fields} FROM Items WHERE id = :id", \DB\SELECT_QUERY, array(
         "id" => $newItemID
     ));
+    \Memcached\add("catalog/item/{$newItemID}", $item);
     return $item;
 }
 

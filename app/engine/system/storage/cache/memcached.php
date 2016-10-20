@@ -21,6 +21,20 @@ function add($key, $value) {
     return $GLOBALS["memcached"]->add($key, $value);
 }
 
+function set($key, $value) {
+    if ($GLOBALS["memcached"] == null) {
+        connect();
+    }
+    return $GLOBALS["memcached"]->set($key, $value);
+}
+
+function delete($key) {
+    if ($GLOBALS["memcached"] == null) {
+        connect();
+    }
+    return $GLOBALS["memcached"]->delete($key);
+}
+
 function stats() {
     if ($GLOBALS["memcached"] == null) {
         connect();

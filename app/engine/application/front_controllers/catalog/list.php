@@ -4,7 +4,7 @@ require_once SYS_DIR . "/templates/compiler.php";
 require_once SYS_DIR . "/templates/output.php";
 require_once BACK_CONTROLLERS_DIR . "/catalog/list.php";
 
-const ITEMS_ONE_PAGE = 25;
+const ITEMS_ONE_PAGE = 40;
 
 function loadItems($params) {
     if (!\BackController\paramsCheck($params)) {

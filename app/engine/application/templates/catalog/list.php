@@ -10,16 +10,40 @@
         <link href="/css/catalog/list.css" rel="stylesheet" />
     </head>
     <body>
-        <?php foreach($data["items"] as $item): ?>
-        <div style="border: 1px dashed gray; text-align: center; margin: 5px; padding: 10px; float: left; border-radius: 3px; display: block;">
-            <div style="padding: 10px;">
-                <img src="<?=$item["image"]?>" style="max-width: 200px; max-height: 200px" alt="" />
+        <header>
+            <a href="/" class="logo"></a>
+        </header>
+        <section class="content">
+            <div class="title">
+                <div class="options">
+                    <div class="options-sort">
+                        <a href="#" class="options-sort-setting-link">По возрастанию цены</a>
+                    </div>
+                    <div class="options-sort-setting">
+                        <a href="#" class="options-sort-setting-item selected" data-type="price:asc">По возрастанию цены</a>
+                        <a href="#" class="options-sort-setting-item" data-type="price:desc">По убыванию цены</a>
+                        <div class="options-sort-setting-sep"></div>
+                        <a href="#" class="options-sort-setting-item" data-type="id:desc">По новизне</a>
+                    </div>
+                </div>
+                <h1>Каталог зубных щеток</h1>
             </div>
-            <div style="padding: 10px;">
-                <?=$item["title"]?> [<?=$item["id"]?>]
+            <div class="items">
+            <?php foreach($data["items"] as $item): ?>
+                <div class="item">
+                    <div class="item-image">
+                        <a href="/catalog/item/<?=$item["id"]?>" class="item-image-link"><img src="<?=$item["image"]?>" alt="<?=$item["title"]?>" /></a>
+                    </div>
+                    <div class="item-title">
+                        <a href="/catalog/item/<?=$item["id"]?>" class="item-title-link" title="<?=$item["title"]?>"><?=$item["title"]?></a>
+                    </div>
+                    <div class="item-price">
+                        <?=$item["price"]?>
+                    </div>
+                </div>
+            <?php endforeach ?>
             </div>
-        </div>
-        <?php endforeach ?>
+        </section>
         <script src="/js/general.js"></script>
         <script src="/js/catalog/list.js"></script>
     </body>

@@ -62,6 +62,7 @@ then
 fi
 
 result=$(curl -s --request POST ${host}${path} --data-urlencode "title=${title}" --data-urlencode "description=${description}" --data "price=${price}" --data-urlencode "image=${image}")
+echo $result
 status_code=$(echo ${result} | python -c "import sys, json; print json.load(sys.stdin)['status_code']")
 
 if [ "$status_code" -eq 0 ]

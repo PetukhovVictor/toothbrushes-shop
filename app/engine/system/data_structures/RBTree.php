@@ -191,6 +191,9 @@ class RbTree
      * @param  boolean
      * @throws InvalidArgumentException
      */
+    public function getRoot() {
+        return $this->root;
+    }
     public function setDebug( $debug )
     {
         if ( !is_bool( $debug ) )
@@ -288,7 +291,7 @@ class RbTree
         $root = $tree->root;
         if ( ( $y = $x->right ) !== $nil )
         {
-            while ( $y->left !== $nil )
+            while ( $y->left !== $nil && $y !== $nil )
             {
                 $y = $y->left;
             }
@@ -297,13 +300,13 @@ class RbTree
         else
         {
             $y = $x->parent;
-            while ( $x === $y->right )
+            while ( $x === $y->right && $x !== $nil )
             {
                 $x = $y;
                 $y = $y->parent;
             }
             if ( $y === $root )
-                return $nil;
+                return null;
 
             return $y;
         }
@@ -324,7 +327,7 @@ class RbTree
         $root = $tree->root;
         if ( ( $y = $x->left ) !== $nil )
         {
-            while ( $y->right !== $nil )
+            while ( $y->right !== $nil && $x !== $nil )
             {
                 $y = $y->right;
             }
@@ -333,10 +336,10 @@ class RbTree
         else
         {
             $y = $x->parent;
-            while ( $x === $y->left )
+            while ( $x === $y->left && $x !== $nil )
             {
                 if ( $y === $root )
-                    return $nil;
+                    return null;
 
                 $x = $y;
                 $y = $y->parent;

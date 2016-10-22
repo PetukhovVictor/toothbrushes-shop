@@ -5,8 +5,8 @@ while [[ $# -gt 1 ]]
 do
     key="$1"
     case $key in
-        -c|--criteria)
-            criteria="$2"
+        -c|--field)
+            field="$2"
             shift
         ;;
         *)
@@ -15,11 +15,11 @@ do
     shift
 done
 
-if [ -z "$criteria" ]
+if [ -z "$field" ]
 then
-    echo "ERROR: criteria not specified" 1>&2
+    echo "ERROR: field not specified" 1>&2
     exit 1
 fi
 
 cd "../..$scriptPath"
-php buildCache.php $criteria
+php buildCache.php $field

@@ -23,43 +23,46 @@ function calcLimitSet($page, $items_one_page) {
     return array(($page - 1) * $items_one_page, $items_one_page);
 }
 
-function getItemsTree($sorting) {
-    $tree = \Memcached\get("catalog/items/treeBy{$sorting}");
+function getSectorBoundsTree($orderBy) {
+    $tree = \Memcached\get("catalog/items/sectors/by_{$orderBy}/bounds_tree");
     if ($tree === false) { // cache miss
-        $tree = file_get_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/treeBy{$sorting}.data");
+        $tree = file_get_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/sectors/by_{$orderBy}/bounds_tree.data");
         $tree = unserialize($tree);
-        \Memcached\add("catalog/items/treeBy{$sorting}", $tree);
+        \Memcached\add("catalog/items/sectors/by_{$orderBy}/bounds_tree", $tree);
     }
     return $tree;
 }
 
-function getSectorNumbers(&$itemsTree, $limit) {
-    $sectorFirst = $itemsTree->lastBest($itemsTree, $limit[0] + 1);
-    $sectorLast = $itemsTree->lastBest($itemsTree, $limit[0] + 1 + $limit[1] + 1);
+function choiceSector(&$sectorBoundsTree, $limit) {
+    $sectorFirst = $sectorBoundsTree->lastBest($sectorBoundsTree, $limit[0] + 1);
+    $sectorLast = $sectorBoundsTree->lastBest($sectorBoundsTree, $limit[0] + 1 + $limit[1] + 1);
     return array(
         "first" => array(
-            "leftBound" => $sectorFirst->key,
-            "sector" => $sectorFirst->value
+            "bound" => $sectorFirst->key,
+            "number" => $sectorFirst->value
         ),
         "last" => array(
-            "leftBound" => $sectorLast->key,
-            "sector" => $sectorLast->value
+            "bound" => $sectorLast->key,
+            "number" => $sectorLast->value
         )
     );
 }
 
-function getIds($sectors, $limit, $sorting) {
+function getItemIds($sectors, $limit, $orderBy) {
     $itemsResidue = $limit[1];
     $itemIds = array();
-    $leftBound = ($limit[0] + 1) - $sectors["first"]["leftBound"];
-    for ($i = $sectors["first"]["sector"]; $i <= $sectors["last"]["sector"]; $i++) {
-        $itemIdsSector = \Memcached\get("catalog/items/arrayBy{$sorting}/{$i}");
+    $leftBound = ($limit[0] + 1) - $sectors["first"]["bound"];
+    for ($i = $sectors["first"]["number"]; $i <= $sectors["last"]["number"]; $i++) {
+        $itemIdsSector = \Memcached\get("catalog/items/ids/by_{$orderBy}/{$i}");
         if ($itemIdsSector === false) { // cache miss
-            $itemIdsSector = file_get_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/arrayBy{$sorting}/{$i}.data");
+            $itemIdsSector = file_get_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/ids/by_{$orderBy}/{$i}.data");
             $itemIdsSector = unserialize($itemIdsSector);
-            \Memcached\add("catalog/items/arrayBy{$sorting}/{$i}", $itemIdsSector);
+            \Memcached\add("catalog/items/ids/by_{$orderBy}/{$i}", $itemIdsSector);
         }
-        $itemIds = array_merge($itemIds, array_slice($itemIdsSector, $leftBound, $itemsResidue));
+        array_push($itemIds, array(
+            "offset" => $leftBound,
+            "items" => array_slice($itemIdsSector, $leftBound, $itemsResidue)
+        ));
         $leftBound = 0;
         $itemsResidue = $limit[1] - count($itemIds);
         if ($itemsResidue == 0) {
@@ -69,27 +72,43 @@ function getIds($sectors, $limit, $sorting) {
     return $itemIds;
 }
 
-function getItems($itemIds) {
+function getItems($itemIds, $orderBy) {
     $items = array();
-    for ($i = 0; $i < count($itemIds); $i++) {
-        $item = \Memcached\get("catalog/item/{$itemIds[$i]}");
-        if ($item === false) { // cache miss
-            $fields = implode(",", ITEMS_CACHE_FIELDS);
-            $item = \DB\query("SELECT {$fields} FROM Items WHERE id = '{$itemIds[$i]}'", \DB\SELECT_QUERY);
-            $item = $item[0];
-            \Memcached\add("catalog/item/{$itemIds[$i]}", $item);
+    for($i = 0; $i < count($itemIds); $i++) {
+        $sector = $itemIds[$i];
+        for($j = 0; $j < count($sector["items"]); $j++) {
+            $id = $sector["items"][$j];
+            $item = \Memcached\get("catalog/item/{$id}");
+            if ($item === false) { // cache miss
+                $fields = implode(",", ITEMS_CACHE_FIELDS);
+                $item = \DB\query("SELECT {$fields} FROM Items WHERE id = '{$id}'", \DB\SELECT_QUERY);
+                $item = $item[0];
+                $item["sectors"] = array(
+                    "by_" . $orderBy => array(
+                        "number" => $i + 1,
+                        "index" => $sector["offset"] + $j
+                    )
+                );
+                \Memcached\add("catalog/item/{$id}", $item);
+            } else if (empty($item["sectors"]["by_" . $orderBy])) {
+                $item["sectors"]["by_" . $orderBy] = array(
+                    "number" => $i + 1,
+                    "index" => $sector["offset"] + $j
+                );
+                \Memcached\set("catalog/item/{$id}", $item);
+            }
+            $item["id"] = $id;
+            array_push($items, $item);
         }
-        $item["id"] = $itemIds[$i];
-        array_push($items, $item);
     }
     return $items;
 }
 
-function loadItems($page, $items_one_page) {
+function loadItems($page, $orderBy, $items_one_page) {
     $limit = calcLimitSet($page, $items_one_page);
-    $itemsTree = getItemsTree("id");
-    $sectors = getSectorNumbers($itemsTree, $limit);
-    $itemIds = getIds($sectors, $limit, "id");
-    $items = getItems($itemIds);
+    $sectorBoundsTree = getSectorBoundsTree($orderBy);
+    $sectors = choiceSector($sectorBoundsTree, $limit);
+    $itemIds = getItemIds($sectors, $limit, $orderBy);
+    $items = getItems($itemIds, $orderBy);
     return $items;
 }

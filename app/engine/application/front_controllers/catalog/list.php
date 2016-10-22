@@ -11,7 +11,7 @@ function loadItems($params) {
         return \Bootstrap\output(-1, "Params is incorrect.");
     }
     $page = empty($params["page"]) ? 1 : $params["page"];
-    $items = \BackController\loadItems($page, ITEMS_ONE_PAGE);
+    $items = \BackController\loadItems($page, "id", ITEMS_ONE_PAGE);
     return \Bootstrap\output(0, "OK", array(
         "items" => $items
     ));

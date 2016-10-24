@@ -35,6 +35,20 @@ function delete($key) {
     return $GLOBALS["memcached"]->delete($key);
 }
 
+function increment($key) {
+    if ($GLOBALS["memcached"] == null) {
+        connect();
+    }
+    return $GLOBALS["memcached"]->increment($key);
+}
+
+function decrement($key) {
+    if ($GLOBALS["memcached"] == null) {
+        connect();
+    }
+    return $GLOBALS["memcached"]->decrement($key);
+}
+
 function stats() {
     if ($GLOBALS["memcached"] == null) {
         connect();

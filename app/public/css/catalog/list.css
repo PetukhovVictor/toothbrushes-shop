@@ -1,17 +1,50 @@
 section.content .title {
     border-bottom: 1px solid #eee;
     padding: 0 20px;
-    height: 55px;
     background: #fbfbfb;
     width: 960px;
     font-size: 13px;
-    line-height: 51px;
+    line-height: 52px;
+}
+
+section.content .title:after {
+    content: "";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
+}
+
+section.content .title h1 {
+    float: left;
+
+}
+
+section.content .title .add-item {
+    float: left;
+    margin-left: 10px;
+    opacity: 0.7;
+    transition: opacity .5s ease;
+}
+
+section.content .title .add-item:after {
+    content: "\e902";
+    font-family: "icons";
+    color: #555;
+    margin-left: 2px;
     vertical-align: middle;
+    font-size: 11px;
+}
+
+section.content .title .add-item:hover {
+    text-decoration: none;
+    opacity: 1.0;
 }
 
 section.content .title.fix {
     position: fixed;
-    top: 45px;
+    top: 0;
+    z-index: 2;
 }
 
 section.content .title .options {
@@ -30,7 +63,7 @@ section.content .title .options .options-sort:hover a {
 section.content .title .options .options-sort:after {
     content: "\e900";
     font-family: "icons";
-    color: #49BED8;
+    color: #3498DB;
     margin-left: 2px;
     vertical-align: middle;
     font-size: 11px;
@@ -45,10 +78,11 @@ section.content .title .options .options-sort-setting {
     background: #fff;
     min-width: 180px;
     padding: 5px 0;
-    border: 1px solid #ddd;
+    border: 1px solid #ebebeb;
     border-radius: 3px;
-    box-shadow: rgba(0, 0, 0, 0.1) 0 1px 3px;
+    box-shadow: rgba(0, 0, 0, .08) 0 1px 2px;
     transition: all .3s ease;
+    z-index: 2;
 }
 
 section.content .title .options .options-sort-setting.showed {
@@ -114,7 +148,8 @@ section.content .items:after {
 }
 
 section.content .items.shifted {
-    margin-top: 70px;
+    margin-top: 0;
+    padding-top: 70px;
 }
 
 section.content .items .item {
@@ -123,19 +158,72 @@ section.content .items .item {
     width: 25%;
     height: 280px;
     text-align: center;
+    border-radius: 3px;
+    color: #555;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+    transition: background-color .1s ease;
+}
+
+section.content .items .item:hover, section.content .items .item:active {
+    background: #f8f8f8;
+    text-decoration: none;
+}
+
+section.content .items .item .item-image .item-image-container {
+    display: block;
+    padding-top: 10px;
+}
+
+section.content .items .item .item-controls {
+    position: absolute;
+    right: 10px;
+    top: -22px;
+    opacity: 0;
+    transition: opacity .1s ease, top .1s ease;
+}
+
+section.content .items .item:hover .item-controls {
+    top: 5px;
+    opacity: 1;
+}
+
+section.content .items .item:hover .item-controls-edit, section.content .items .item:hover .item-controls-delete {
+    opacity: 0.7;
+}
+
+section.content .items .item:hover .item-controls-edit:hover, section.content .items .item:hover .item-controls-delete:hover {
+    opacity: 1.0;
+}
+
+section.content .items .item:hover .item-controls-edit:after {
+    display: inline-block;
+    content: "\e903";
+    font-family: "icons";
+    color: #555;
+    margin-right: 5px;
+    vertical-align: middle;
+    font-size: 13px;
+}
+
+section.content .items .item:hover .item-controls-delete:after {
+    display: inline-block;
+    content: "\e901";
+    font-family: "icons";
+    color: #555;
+    vertical-align: middle;
+    font-size: 12px;
 }
 
 section.content .items .item .item-title {
     font-size: 13px;
     line-height: 18px;
-    max-height: 36px;
+    height: 36px;
     max-width: 70%;
+    display: block;
     margin: 10px auto 0 auto;
-    display: -webkit-box;
     overflow: hidden;
-    text-overflow: ellipsis;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
 }
 
 section.content .items .item .item-title a {
@@ -144,30 +232,83 @@ section.content .items .item .item-title a {
 
 section.content .items .item .item-price {
     margin-top: 5px;
+    display: block;
     line-height: 18px;
     height: 16px;
     font-size: 18px;
 }
 
-section.content .items .item .item-price:after {
-    content: "₽";
-}
-
 section.content .items .item .item-image {
     height: 200px;
+    display: block;
 }
 
 section.content .items .item .item-image img {
     max-width: 200px;
-    max-height: 200px;
+    max-height: 190px;
     margin: 0 auto;
     display: block;
 }
 
-.popup.item-info .item-loading {
+section.content .loading-more-items {
     background: url("../../images/loading.gif");
     width: 32px;
     height: 32px;
-    margin: 20px auto;
+    margin: 40px auto 20px auto;
     background-size: contain;
+    clear: both;
+}
+
+.popup.item-info .item-loading, .popup.edit-item .item-loading {
+    background: url("../../images/loading.gif");
+    width: 32px;
+    height: 32px;
+    margin: 40px auto 20px auto;
+    background-size: contain;
+}
+
+.popup.item-info .item-info-wrap {
+    margin: 10px 10px 15px 10px;
+}
+
+.popup.item-info .item-image {
+    display: table-cell;
+    vertical-align: middle;
+    padding-right: 10px;
+}
+
+.popup.item-info .item-image img {
+    max-width: 300px;
+    max-height: 380px;
+}
+
+.popup.item-info .item-info {
+    display: table-cell;
+    vertical-align: top;
+    text-align: justify;
+    margin-right: 15px;
+}
+
+.popup.item-info .item-info h2 {
+    margin-bottom: 20px;
+}
+
+.popup.item-info .item-info .item-description {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.popup.add-item .manage-item-form, .popup.edit-item .manage-item-form {
+    width: 600px;
+    padding: 30px 10px 10px 10px;
+}
+
+.popup.add-item .manage-item-form .field.button, .popup.edit-item .manage-item-form .field.button {
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 1px solid #ddd;
+}
+
+.popup.add-item .manage-item-form .manage-item-form-message {
+    text-align: center;
 }

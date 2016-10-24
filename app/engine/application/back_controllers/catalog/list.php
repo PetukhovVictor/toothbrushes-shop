@@ -33,10 +33,23 @@ function getSectorBoundsTree($orderBy) {
     return $tree;
 }
 
-function choiceSector(&$sectorBoundsTree, $limit) {
+function choiceSector(&$sectorBoundsTree, $limit, $orderDirection) {
+    if ($orderDirection == "desc") {
+        $catalogInfo = \Memcached\get("catalog/items/common/info");
+        if ($catalogInfo === false) {
+            $catalogInfo = file_get_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/common/info.data");
+            $catalogInfo = unserialize($catalogInfo);
+            \Memcached\add("catalog/items/common/info", $catalogInfo);
+        }
+        $numberAllItems = $catalogInfo["numberAllItem"];
+        $originalLimit1 = $limit[1];
+        $limit[1] = $originalLimit1;
+        $limit[0] = $numberAllItems - $limit[0] - $originalLimit1;
+    }
     $sectorFirst = $sectorBoundsTree->lastBest($sectorBoundsTree, $limit[0] + 1);
     $sectorLast = $sectorBoundsTree->lastBest($sectorBoundsTree, $limit[0] + 1 + $limit[1] + 1);
     return array(
+        "limit" => $limit,
         "first" => array(
             "bound" => $sectorFirst->key,
             "number" => $sectorFirst->value
@@ -72,7 +85,7 @@ function getItemIds($sectors, $limit, $orderBy) {
     return $itemIds;
 }
 
-function getItems($itemIds, $orderBy) {
+function getItems($itemIds, $orderBy, $orderDirection, $chosenSectors) {
     $items = array();
     for($i = 0; $i < count($itemIds); $i++) {
         $sector = $itemIds[$i];
@@ -85,30 +98,35 @@ function getItems($itemIds, $orderBy) {
                 $item = $item[0];
                 $item["sectors"] = array(
                     "by_" . $orderBy => array(
-                        "number" => $i + 1,
+                        "number" => $chosenSectors["first"]["number"],
                         "index" => $sector["offset"] + $j
                     )
                 );
                 \Memcached\add("catalog/item/{$id}", $item);
             } else if (empty($item["sectors"]["by_" . $orderBy])) {
                 $item["sectors"]["by_" . $orderBy] = array(
-                    "number" => $i + 1,
+                    "number" => $chosenSectors["first"]["number"],
                     "index" => $sector["offset"] + $j
                 );
                 \Memcached\set("catalog/item/{$id}", $item);
             }
+            $item["price"] = number_format($item["price"], 0, '.', ' ');
             $item["id"] = $id;
+            unset($item["sectors"]);
             array_push($items, $item);
         }
+    }
+    if ($orderDirection == "desc") {
+        $items = array_reverse($items);
     }
     return $items;
 }
 
-function loadItems($page, $orderBy, $items_one_page) {
+function loadItems($page, $orderBy, $orderDirection, $items_one_page) {
     $limit = calcLimitSet($page, $items_one_page);
     $sectorBoundsTree = getSectorBoundsTree($orderBy);
-    $sectors = choiceSector($sectorBoundsTree, $limit);
-    $itemIds = getItemIds($sectors, $limit, $orderBy);
-    $items = getItems($itemIds, $orderBy);
+    $sectors = choiceSector($sectorBoundsTree, $limit, $orderDirection);
+    $itemIds = getItemIds($sectors, $sectors["limit"], $orderBy);
+    $items = getItems($itemIds, $orderBy, $orderDirection, $sectors);
     return $items;
 }

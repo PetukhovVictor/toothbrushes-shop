@@ -31,10 +31,12 @@ if (!file_exists($frontController)) {
 define("MODULE_NAME", $module);
 define("ACTION_NAME", $action);
 
-function loadTemplate($environment) {
+function loadTemplate($environment, $params = null) {
     $moduleParams = \Config\ROUTERS[MODULE_NAME];
     $actionParams = $moduleParams["actions"][ACTION_NAME];
-    $template = \Template\load($moduleParams["template"] . $actionParams["template"]);
+    $moduleTemplate = $params != null && $params["moduleTemplate"] ? $params["moduleTemplate"] : $moduleParams["template"];
+    $actionTemplate = $params != null && $params["actionTemplate"] ? $params["actionTemplate"] : $actionParams["template"];
+    $template = \Template\load($moduleTemplate . $actionTemplate);
     return \Template\compile($template, $environment);
 }
 

@@ -37,13 +37,19 @@ h1 {
     margin: 0;
 }
 
+h2 {
+    font-weight: normal;
+    font-size: 18px;
+    margin: 0;
+}
+
 b {
     font-family: "Open Sans Bold", sans-serif;
     font-weight: normal;
 }
 
 a:link, a:visited {
-    color: #49BED8;
+    color: #3498DB;
     text-decoration: none;
 }
 
@@ -51,12 +57,56 @@ a:hover, a:active {
     text-decoration: underline;
 }
 
+input[type="text"], input[type="number"], input[type="password"], textarea {
+    padding: 8px 7px;
+    border-radius: 1px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    outline: none;
+    font-size: 13px;
+}
+
+input[type="text"][disabled], input[type="number"][disabled], input[type="password"][disabled], textarea[disabled] {
+    color: #999;
+    cursor: default;
+}
+
+textarea {
+    min-height: 80px;
+}
+
+button {
+    background: #3498DB;
+    border: 0;
+    border-radius: 2px;
+    padding: 8px 30px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #fff;
+    outline: none;
+}
+
+button:hover {
+    background: #3293d3;
+}
+
+button:active {
+    background: #3293d3;
+    padding: 9px 30px 7px 30px;
+}
+
+button[disabled] {
+    background: #ddd;
+    border: 1px solid #cecece;
+    color: #8a8a8a;
+    cursor: default;
+}
+
 header {
-    background: #49BED8;
-    height: 45px;
+    background: #3498DB;
     width: 100%;
-    top: 0;
-    position: fixed;
+    z-index: 2;
+    padding: 10px 0;
 }
 
 header .logo {
@@ -65,91 +115,136 @@ header .logo {
     width: 32px;
     height: 32px;
     display: block;
-    margin: 5px auto;
-    border: 1px solid #fff;
-    border-radius: 17px;
+    margin: 0 auto;
 }
 
 section.content {
-    border-top: 4px solid #49BED8;
     border-left: 1px solid #eee;
     border-right: 1px solid #eee;
     border-bottom: 1px solid #eee;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
     border-bottom-left-radius: 3px;
     border-bottom-right-radius: 3px;
     width: 1000px;
-    margin: 60px auto 30px auto;
+    margin: 0 auto 30px auto;
     background: #fff;
 }
 
 .popup .popup-shadow {
     position: fixed;
-    background: rgba(255,255,255,0.8);
+    background: rgba(0,0,0,.666);
     width: 100%;
     height: 100%;
     left: 0;
     top: 0;
-    z-index: 1;
+    z-index: 2;
+    cursor: pointer;
 }
 
 .popup .popup-body {
+    box-shadow: 0 1px 5px rgba(0,0,0,.2);
     z-index: 2;
     position: fixed;
     min-height: 100px;
     min-width: 300px;
-    padding: 5px 10px;
+    padding: 0 0 20px 0;
     background: #fff;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    border-top: 4px solid #49BED8;
-    border-left: 1px solid #eee;
-    border-right: 1px solid #eee;
-    border-bottom: 1px solid #eee;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-    border-bottom-left-radius: 3px;
-    border-bottom-right-radius: 3px;
+    border-radius: 3px;
+    max-height: 100%;
+    overflow-y: auto;
 }
 
 .popup .popup-body .popup-title {
-    text-transform: uppercase;
-    font-family: "Open Sans Bold";
-    font-size: 14px;
-    margin-right: 25px;
+    font-size: 18px;
+    border-bottom: 1px solid #eee;
+    height: 65px;
+    line-height: 65px;
+    padding-left: 20px;
+    vertical-align: middle;
+    background: #fbfbfb;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
 }
 
 .popup .popup-body .popup-content {
     font-size: 13px;
+    padding: 0 30px;
 }
 
-.popup .popup-body .popup-controls {
+.popup .popup-shadow:hover .popup-controls .popup-control-close:after {
+    opacity: 1.0;
+}
+
+.popup .popup-shadow .popup-controls {
     position: absolute;
-    right: 10px;
-    top: 10px;
+    right: 18px;
+    top: 18px;
 }
 
-.popup .popup-body .popup-controls .popup-control-close {
+.popup .popup-shadow .popup-controls .popup-control-close {
     display: block;
     float: right;
 }
 
-.popup .popup-body .popup-controls .popup-control-close:hover {
+.popup .popup-shadow .popup-controls .popup-control-close:hover {
     text-decoration: none;
 }
 
-.popup .popup-body .popup-controls .popup-control-close:after {
+.popup .popup-shadow .popup-controls .popup-control-close:after {
     content: "\e901";
     font-family: "icons";
-    color: #555;
+    color: #fff;
     vertical-align: top;
-    font-size: 11px;
-    opacity: .7;
+    font-size: 16px;
+    opacity: .3;
     transition: opacity .5s ease;
 }
 
-.popup .popup-body .popup-controls .popup-control-close:hover:after {
+.popup .popup-shadow .popup-controls .popup-control-close:hover:after {
     opacity: 1.0;
+}
+
+.popup .popup-confirm-text {
+    margin: 20px 0;
+}
+
+.popup .popup-confirm-button {
+    display: block;
+    margin: 0 auto;
+}
+
+form .field {
+    margin-top: 15px;
+    display: table;
+    width: 100%;
+}
+
+form .field:first-child {
+    margin-top: 0;
+}
+
+form .field .field-name {
+    display: table-cell;
+    width: 30%;
+    padding-right: 20px;
+    line-height: 34px;
+    text-align: right;
+    box-sizing: border-box;
+    vertical-align: top;
+}
+
+form .field .field-value {
+    display: table-cell;
+    vertical-align: middle;
+    width: 70%;
+}
+
+form .field .field-value input, form .field .field-value textarea {
+    width: 100%;
+}
+
+form .field .field-value textarea {
+    resize: vertical;
 }

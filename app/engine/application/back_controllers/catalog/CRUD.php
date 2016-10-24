@@ -4,6 +4,7 @@ require_once SYS_DIR . "/config.php";
 require_once STORAGE_DIR . "/database/mysql.php";
 require_once STORAGE_DIR . "/cache/memcached.php";
 require_once SYS_DIR . "/data_structures/RBTree.php";
+require_once SYS_DIR . "/helpers.php";
 
 const CONSTRAINS = array(
     "id" => '^[1-9]\d*?$',
@@ -14,10 +15,28 @@ const CONSTRAINS = array(
 );
 
 const ARRAYS_ID_MAX_DEFLECTION_FACTOR = 0.9; // d factor = (actual size - predefined size) / actual size
+const CACHE_SNAPSHOTS_DIRECTORY_FILES_LIMIT = 100;
 const ITEMS_CACHE_FIELDS = array("title", "price", "image");
 const ORDERING_FIELDS = array("id", "price");
 const ITEMS_CACHE_FIELD_KEY = "id";
 const CACHE_SNAPSHOTS_DIRECTORY = HOME_DIR . "/../../data/cache_snapshots";
+
+function cacheSnapshot($path, $key, $value) {
+    $dir = createCacheSnapshotDirectories($path);
+    file_put_contents(($key == null ? $path : $dir . "/" . $key) . ".data", serialize($value));
+}
+
+function createCacheSnapshotDirectories($path) {
+    $path = explode("/", $path);
+    $currentDir = CACHE_SNAPSHOTS_DIRECTORY;
+    foreach($path as $dir) {
+        $currentDir = $currentDir . "/" . $dir;
+        if (!is_dir($currentDir)) {
+            mkdir($currentDir);
+        }
+    }
+    return $currentDir;
+}
 
 function paramsCheck($params, $mode = "add") {
     if (empty($params) || !is_array($params)) {
@@ -47,37 +66,6 @@ function rebuildIdsArray() {
 
 }
 
-function deleteItem($itemParams) {
-    $item = \DB\query("SELECT * FROM Items WHERE id = :id", \DB\SELECT_QUERY, array(
-        "id" => $itemParams["id"]
-    ));
-    if (count($item) == 0) {
-        return -2;
-    }
-    \DB\query("DELETE FROM Items WHERE `id` = :id", \DB\DELETE_QUERY, array(
-        "id" => $itemParams["id"]
-    ));
-    \Memcached\delete("catalog/item/{$itemParams["id"]}");
-    return 0;
-}
-
-function editItem($itemParams, $id) {
-    $itemParams["id"] = $id;
-    $item = \DB\query("SELECT * FROM Items WHERE id = :id", \DB\SELECT_QUERY, array(
-        "id" => $id
-    ));
-    if (count($item) == 0) {
-        return -2;
-    }
-    \DB\query("UPDATE Items SET `title` = :title, `description` = :description, `price` = :price, `image` = :image WHERE `id` = :id", \DB\UPDATE_QUERY, $itemParams);
-    $cacheItem = array();
-    foreach (ITEMS_CACHE_FIELDS as $field) {
-        $cacheItem[$field] = $itemParams[$field];
-    }
-    \Memcached\set("catalog/item/{$id}", $cacheItem);
-    return $item;
-}
-
 function sectorInsertItem($field, $target, $id) {
     $sectorNumber = $target["sector"];
     $path = "catalog/items/ids/by_{$field}";
@@ -102,6 +90,28 @@ function sectorInsertItem($field, $target, $id) {
         }
         \Memcached\set("{$path}/{$sectorNumber}", $idsCache);
     }
+    $path = \Helpers\directoriesCalcPath($id, CACHE_SNAPSHOTS_DIRECTORY_FILES_LIMIT);
+    $dir = createCacheSnapshotDirectories("catalog/items/entries");
+    $dir = \Helpers\directoriesCreatePath($dir, $path);
+    if (is_file($dir . ".data")) {
+        $sectors = file_get_contents($dir . ".data");
+        $sectors = unserialize($sectors);
+        $currentSectors = array(
+            "by_" . $field => array(
+                "number" => $target["sector"],
+                "index" => $target["index"]
+            )
+        );
+        $sectors = array_merge($currentSectors, $sectors);
+    } else {
+        $sectors = array(
+            "by_" . $field => array(
+                "number" => $target["sector"],
+                "index" => $target["index"]
+            )
+        );
+    }
+    cacheSnapshot($dir, null, $sectors);
 }
 
 function getSectorsArray($field) {
@@ -121,8 +131,8 @@ function getTargetSector($field, $item, $id) {
         ? "(id < {$id} AND {$field} = {$item[$field]}) OR {$field} < {$item[$field]}"
         : "id < {$id}";
     $orderBy = $field != ITEMS_CACHE_FIELD_KEY
-        ? "{$field} ASC, " . ITEMS_CACHE_FIELD_KEY . " ASC"
-        : ITEMS_CACHE_FIELD_KEY . " ASC";
+        ? "{$field} DESC, " . ITEMS_CACHE_FIELD_KEY . " DESC"
+        : ITEMS_CACHE_FIELD_KEY . " DESC";
     $resultSet = \DB\query("SELECT * FROM Items WHERE {$where} ORDER BY {$orderBy} LIMIT 1", \DB\SELECT_QUERY);
     if (count($resultSet) == 0) {
         return array(
@@ -132,15 +142,17 @@ function getTargetSector($field, $item, $id) {
     }
     $prevId = $resultSet[0]["id"];
     $prevItem = \Memcached\get("{$path}/{$prevId}");
-    if ($prevItem === null) {
-        return array(
-            "sector" => 1,
-            "index" => -1
+    if ($prevItem === false) {
+        $path = \Helpers\directoriesCalcPath($prevId, CACHE_SNAPSHOTS_DIRECTORY_FILES_LIMIT);
+        $sectors = file_get_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/entries/" . $path . ".data");
+        $sectors = unserialize($sectors);
+        $prevItem = array(
+            "sectors" => $sectors
         );
     }
     return array(
-        "sector" => $prevItem["sector"],
-        "index" => $prevItem["index"]
+        "sector" => $prevItem["sectors"]["by_" . $field]["number"],
+        "index" => $prevItem["sectors"]["by_" . $field]["index"]
     );
 }
 
@@ -155,7 +167,7 @@ function sectorsRebuildArray($field, $targetSector, $type) {
         for ($i = $targetSector; $i < count($sectorsArray); $i++) {
             $sectorsArray[$i] += ($type == "increment" ? 1 : -1);
         }
-        file_put_contents(CACHE_SNAPSHOTS_DIRECTORY . "/{$path}/array.data", $sectorsArray);
+        file_put_contents(CACHE_SNAPSHOTS_DIRECTORY . "/{$path}/array.data", serialize($sectorsArray));
         \Memcached\add("{$path}/array", $sectorsArray);
     }
     $sectorsArrayCache = \Memcached\get("{$path}/array");
@@ -178,19 +190,19 @@ function sectorsRebuildBoundsTree($field, $targetSector, $type) {
     $sectorsBoundsTree = null;
     if ($sectorsBoundsTreeFile !== false) {
         $sectorsBoundsTree = unserialize($sectorsBoundsTreeFile);
-        $targetNode = $sectorsBoundsTree->findKey($targetSector["bound"]);
+        $targetNode = $sectorsBoundsTree->findKey($sectorsBoundsTree, $targetSector["bound"]);
         $nextNode = $targetNode;
         while ($nextNode = $sectorsBoundsTree->treeSuccessor($sectorsBoundsTree, $nextNode)) {
             $nextNode->key += ($type == "increment" ? 1 : -1);
         }
-        file_put_contents(CACHE_SNAPSHOTS_DIRECTORY . "/{$path}/bounds_tree.data", $sectorsBoundsTree);
+        file_put_contents(CACHE_SNAPSHOTS_DIRECTORY . "/{$path}/bounds_tree.data", serialize($sectorsBoundsTree));
         \Memcached\add("{$path}/bounds_tree", $sectorsBoundsTree);
     }
     $sectorsBoundsTreeCache = \Memcached\get("{$path}/bounds_tree");
     if ($sectorsBoundsTreeCache !== false) {
         if ($sectorsBoundsTree == null) {
             $sectorsBoundsTree = $sectorsBoundsTreeCache;
-            $targetNode = $sectorsBoundsTree->findKey($targetSector["bound"]);
+            $targetNode = $sectorsBoundsTree->findKey($sectorsBoundsTree, $targetSector["bound"]);
             $nextNode = $targetNode;
             while ($nextNode = $sectorsBoundsTree->treeSuccessor($sectorsBoundsTree, $nextNode)) {
                 $nextNode->key += ($type == "increment" ? 1 : -1);
@@ -202,8 +214,11 @@ function sectorsRebuildBoundsTree($field, $targetSector, $type) {
 
 function sectorsChangeBounds($field, $targetSector, $type) {
     $sectorLeftBound = sectorsRebuildArray($field, $targetSector, $type);
-    $targetSector["bound"] = $sectorLeftBound;
-    sectorsRebuildBoundsTree($field, $targetSector, $type);
+    $sector = array(
+        "number" => $targetSector,
+        "bound" => $sectorLeftBound
+    );
+    sectorsRebuildBoundsTree($field, $sector, $type);
 }
 
 function addItemProcedure($item, $id) {
@@ -219,6 +234,43 @@ function addItemProcedure($item, $id) {
     }
     $item["sectors"] = $sectors;
     \Memcached\add("catalog/item/{$id}", $item);
+    $catalogInfo = \Memcached\get("catalog/items/common/info");
+    if ($catalogInfo !== false) {
+        $catalogInfo["numberAllItem"] += 1;
+        \Memcached\set("catalog/items/common/info", $catalogInfo);
+    }
+    $catalogInfo = file_get_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/common/info.data");
+    if ($catalogInfo !== false) {
+        $catalogInfo = unserialize($catalogInfo);
+        $catalogInfo["numberAllItem"] += 1;
+        file_put_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/common/info.data", serialize($catalogInfo));
+    }
+}
+
+function deleteItemProcedure($item, $id) {
+    $sectors = array();
+    foreach (ORDERING_FIELDS as $field) {
+        $target = getTargetSector($field, $item, $id);
+        sectorInsertItem($field, $target, $id);
+        sectorsChangeBounds($field, $target["sector"], "increment");
+        $sectors["by_" . $field] = array(
+            "number" => $target["sector"],
+            "index" => $target["index"] + 1
+        );
+    }
+    $item["sectors"] = $sectors;
+    \Memcached\add("catalog/item/{$id}", $item);
+    $catalogInfo = \Memcached\get("catalog/items/common/info");
+    if ($catalogInfo !== false) {
+        $catalogInfo["numberAllItem"] += 1;
+        \Memcached\set("catalog/items/common/info", $catalogInfo);
+    }
+    $catalogInfo = file_get_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/common/info.data");
+    if ($catalogInfo !== false) {
+        $catalogInfo = unserialize($catalogInfo);
+        $catalogInfo["numberAllItem"] += 1;
+        file_put_contents(CACHE_SNAPSHOTS_DIRECTORY . "/catalog/items/common/info.data", serialize($catalogInfo));
+    }
 }
 
 function addItem($itemParams) {
@@ -232,9 +284,41 @@ function addItem($itemParams) {
     return $item;
 }
 
-function getItem($itemParams) {
+function deleteItem($itemParams) {
     $item = \DB\query("SELECT * FROM Items WHERE id = :id", \DB\SELECT_QUERY, array(
         "id" => $itemParams["id"]
+    ));
+    if (count($item) == 0) {
+        return -2;
+    }
+    \DB\query("DELETE FROM Items WHERE `id` = :id", \DB\DELETE_QUERY, array(
+        "id" => $itemParams["id"]
+    ));
+    \Memcached\delete("catalog/item/{$itemParams["id"]}");
+    deleteItemProcedure($item[0], $itemParams["id"]);
+    return 0;
+}
+
+function editItem($itemParams, $id) {
+    $itemParams["id"] = $id;
+    $item = \DB\query("SELECT * FROM Items WHERE id = :id", \DB\SELECT_QUERY, array(
+        "id" => $id
+    ));
+    if (count($item) == 0) {
+        return -2;
+    }
+    \DB\query("UPDATE Items SET `title` = :title, `description` = :description, `price` = :price, `image` = :image WHERE `id` = :id", \DB\UPDATE_QUERY, $itemParams);
+    $cacheItem = array();
+    foreach (ITEMS_CACHE_FIELDS as $field) {
+        $cacheItem[$field] = $itemParams[$field];
+    }
+    \Memcached\set("catalog/item/{$id}", $cacheItem);
+    return $item;
+}
+
+function getItem($itemParams) {
+    $item = \DB\query("SELECT * FROM Items WHERE id = :id", \DB\SELECT_QUERY, array(
+        "id" => $itemParams
     ));
     if (count($item) == 0) {
         return -2;

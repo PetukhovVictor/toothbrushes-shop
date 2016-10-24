@@ -8,14 +8,16 @@ require_once SYS_DIR . "/config.php";
 require_once STORAGE_DIR . "/database/mysql.php";
 require_once STORAGE_DIR . "/cache/memcached.php";
 require_once SYS_DIR . "/data_structures/RBTree.php";
+require_once SYS_DIR . "/helpers.php";
 
 const CACHE_SNAPSHOTS_DIRECTORY = HOME_DIR . "/../data/cache_snapshots";
+const CACHE_SNAPSHOTS_DIRECTORY_FILES_LIMIT = 100;
 const ITEMS_CACHE_SIZE = 10000; // 10.000 items per one key
 const ITEMS_CACHE_SQL_PORTION_SIZE = 1000; // must be a multiple of ITEMS_CACHE_SIZE
 const ITEMS_CACHE_FIELD_KEY = "id";
 const ITEMS_CACHE_FIELDS = array("title", "price", "image");
 
-function cacheSnapshot($path, $key, $value) {
+function createCacheSnapshotDirectories($path) {
     $path = explode("/", $path);
     $currentDir = CACHE_SNAPSHOTS_DIRECTORY;
     foreach($path as $dir) {
@@ -24,7 +26,12 @@ function cacheSnapshot($path, $key, $value) {
             mkdir($currentDir);
         }
     }
-    file_put_contents($currentDir . "/" . $key . ".data", serialize($value));
+    return $currentDir;
+}
+
+function cacheSnapshot($path, $key, $value) {
+    $dir = createCacheSnapshotDirectories($path);
+    file_put_contents(($key == null ? $path : $dir . "/" . $key) . ".data", serialize($value));
 }
 
 function cacheItems(&$resultSet, &$itemIds, $option) {
@@ -44,19 +51,27 @@ function cacheItems(&$resultSet, &$itemIds, $option) {
                 "index" => $itemIndex
             )
         );
+        /*
+        $path = \Helpers\directoriesCalcPath($row["id"], CACHE_SNAPSHOTS_DIRECTORY_FILES_LIMIT);
+        $dir = createCacheSnapshotDirectories("catalog/items/entries");
+        $dir = \Helpers\directoriesCreatePath($dir, $path);
+        */
         $currentItem = \Memcached\get("catalog/item/" . $row["id"]);
-        if ($currentItem === false) {
+        if ($currentItem === false/* && !is_file($dir . ".data")*/) {
             \Memcached\add("catalog/item/" . $row["id"], $item);
+            //cacheSnapshot($dir, null, $item["sectors"]);
         } else {
+            /*if ($currentItem === false) {
+                $sectors = file_get_contents($dir . ".data");
+                $sectors = unserialize($sectors);
+                $currentItem = array(
+                    "sectors" => $sectors
+                );
+            }*/
             $item["sectors"] = array_merge($currentItem["sectors"], $item["sectors"]);
             \Memcached\set("catalog/item/" . $row["id"], $item);
+            //cacheSnapshot($dir, null, $item["sectors"]);
         }
-        \DB\query("INSERT INTO ItemsCacheSectors(`item_id`, `type`, `sector`, `index`) VALUES(:item_id, :type, :sector, :index)", \DB\INSERT_QUERY, array(
-            "item_id" => $row["id"],
-            "type" => $option["field"],
-            "sector" => $option["sectorNumber"],
-            "index" => $itemIndex
-        ));
     }
     return array(
         "id" => $idPrevSet,
@@ -85,7 +100,13 @@ function cacheSectors($field, &$sectorsArray, &$sectorBoundsTree) {
 
 function getNumberItems() {
     $numberAllItemResult = \DB\query("SELECT COUNT(*) as count FROM `Items`", \DB\SELECT_QUERY);
-    return $numberAllItemResult[0]["count"];
+    $numberAllItemResult = $numberAllItemResult[0]["count"];
+    $commonInfo = array(
+        "numberAllItem" => $numberAllItemResult
+    );
+    \Memcached\add("catalog/items/common/info", $commonInfo);
+    cacheSnapshot("catalog/items/common", "info", $commonInfo);
+    return $numberAllItemResult;
 }
 
 function cache($field) {
